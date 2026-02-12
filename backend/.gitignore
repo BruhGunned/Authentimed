@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+
+# Mac
+.DS_Store
+
+# Uploads
+uploads/
+qr_codes/
+
+# Vite
+.vite/
