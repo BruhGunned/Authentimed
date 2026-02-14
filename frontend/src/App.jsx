@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ManufacturerPanel from "./components/ManufacturerPanel";
+import PharmacistPanel from "./components/PharmacistPanel";
 import ConsumerPanel from "./components/ConsumerPanel";
 
 export default function App() {
@@ -19,6 +20,15 @@ export default function App() {
         >
           Manufacturer
         </button>
+
+
+        <button
+          className={activeTab === "pharmacist" ? "active" : ""}
+          onClick={() => setActiveTab("pharmacist")}
+        >
+          Pharmacist
+        </button>
+
         <button
           className={activeTab === "consumer" ? "active" : ""}
           onClick={() => setActiveTab("consumer")}
@@ -29,6 +39,7 @@ export default function App() {
 
       <div className="panel">
         {activeTab === "manufacturer" && <ManufacturerPanel />}
+        {activeTab === "pharmacist" && <PharmacistPanel />}
         {activeTab === "consumer" && <ConsumerPanel />}
       </div>
     </div>

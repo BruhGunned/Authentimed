@@ -19,3 +19,5 @@ qr_codes/
 
 # Vite
 .vite/
+
+ai-auth/.DS_Store

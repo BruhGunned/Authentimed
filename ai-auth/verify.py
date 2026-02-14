@@ -41,21 +41,27 @@ ref_color = np.array(ref["color"])
 ref_centroid = np.array(ref["centroid"])
 
 
-def verify_packaging(image_path):
-    img = cv2.imread(image_path)
+def verify_packaging(scan_path, template_path):
+    scan_img = cv2.imread(scan_path)
+    template_img = cv2.imread(template_path)
 
-    if img is None:
+    if scan_img is None or template_img is None:
         return False
 
-    blur, color, centroid = extract_features(img)
+    # Extract features from both
+    scan_blur, scan_color, scan_centroid = extract_features(scan_img)
+    ref_blur, ref_color, ref_centroid = extract_features(template_img)
 
-    if blur < ref_blur * TOLERANCES["blur"]:
+    # Blur check
+    if scan_blur < ref_blur * TOLERANCES["blur"]:
         return False
 
-    if np.linalg.norm(color - ref_color) > TOLERANCES["color"]:
+    # Color check
+    if np.linalg.norm(scan_color - ref_color) > TOLERANCES["color"]:
         return False
 
-    if np.linalg.norm(centroid - ref_centroid) > TOLERANCES["centroid"]:
+    # Centroid check
+    if np.linalg.norm(scan_centroid - ref_centroid) > TOLERANCES["centroid"]:
         return False
 
     return True
