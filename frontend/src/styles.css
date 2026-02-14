@@ -100,7 +100,40 @@ body {
 .divider {
   margin: 25px 0;
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1p
+  x solid #e5e7eb;
+}
+
+.result-card {
+  margin-top: 30px;
+  padding: 25px;
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.result-success {
+  background-color: #1e3a2f;
+  border: 2px solid #22c55e;
+  color: #d1fae5;
+}
+
+.result-fail {
+  background-color: #3a1e1e;
+  border: 2px solid #ef4444;
+  color: #fecaca;
+}
+
+.result-warning {
+  background-color: #3a341e;
+  border: 2px solid #facc15;
+  color: #fef08a;
+}
+
+.result-neutral {
+  background-color: #2c2f3a;
+  border: 2px solid #64748b;
+  color: #e2e8f0;
 }
 
 .result-images {

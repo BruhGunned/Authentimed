@@ -11,45 +11,17 @@ contract ProductRegistry {
     }
 
     mapping(string => Product) private products;
-
-    // Manufacturer approval
-    mapping(address => bool) public approvedManufacturers;
-    mapping(address => uint256) public votes;
-
-    // Canonical template hash
     mapping(address => bytes32) public packagingHash;
 
-    // Validators (PBFT-style)
-    mapping(address => bool) public validators;
-    uint256 public validatorCount;
+    address public owner;
 
-    constructor(address[] memory _validators) {
-        for (uint i = 0; i < _validators.length; i++) {
-            validators[_validators[i]] = true;
-        }
-        validatorCount = _validators.length;
+    constructor() {
+        owner = msg.sender;
     }
 
-    modifier onlyValidator() {
-        require(validators[msg.sender], "Not validator");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
         _;
-    }
-
-    modifier onlyApprovedManufacturer() {
-        require(approvedManufacturers[msg.sender], "Manufacturer not approved");
-        _;
-    }
-
-    // -------------------------
-    // PBFT-style manufacturer approval
-    // -------------------------
-
-    function voteManufacturer(address candidate) public onlyValidator {
-        votes[candidate]++;
-
-        if (votes[candidate] >= (validatorCount * 2 / 3) + 1) {
-            approvedManufacturers[candidate] = true;
-        }
     }
 
     // -------------------------
@@ -58,7 +30,7 @@ contract ProductRegistry {
 
     function registerTemplateHash(bytes32 hash)
         public
-        onlyApprovedManufacturer
+        onlyOwner
     {
         packagingHash[msg.sender] = hash;
     }
@@ -69,7 +41,7 @@ contract ProductRegistry {
 
     function registerProduct(string memory id)
         public
-        onlyApprovedManufacturer
+        onlyOwner
     {
         require(products[id].state == State.NONE, "Already registered");
 
@@ -80,7 +52,7 @@ contract ProductRegistry {
     }
 
     // -------------------------
-    // 🔥 Replay Detection Here
+    // Replay detection
     // -------------------------
 
     function verifyProduct(string memory id)

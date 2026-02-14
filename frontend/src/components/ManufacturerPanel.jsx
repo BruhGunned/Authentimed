@@ -2,31 +2,17 @@ import { useState } from "react";
 import ResultCard from "./ResultCard";
 
 export default function ManufacturerPanel() {
-  const [account, setAccount] = useState("");
   const [templateFile, setTemplateFile] = useState(null);
   const [result, setResult] = useState(null);
-
-  const handleOnboard = async () => {
-    if (!account || !templateFile) return;
-
-    const formData = new FormData();
-    formData.append("account", account);
-    formData.append("file", templateFile);
-
-    const res = await fetch("http://127.0.0.1:5000/manufacturer/onboard", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-    setResult(data);
-  };
+  const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
-    if (!account) return;
+    if (!templateFile) return alert("Upload packaging template");
 
     const formData = new FormData();
-    formData.append("account", account);
+    formData.append("file", templateFile);
+
+    setLoading(true);
 
     const res = await fetch("http://127.0.0.1:5000/manufacturer/generate", {
       method: "POST",
@@ -35,38 +21,22 @@ export default function ManufacturerPanel() {
 
     const data = await res.json();
     setResult(data);
+    setLoading(false);
   };
 
   return (
     <div className="card">
       <h2>Manufacturer Dashboard</h2>
 
-      <input
-        type="text"
-        placeholder="Manufacturer Account"
-        value={account}
-        onChange={(e) => setAccount(e.target.value)}
-      />
-
-      <hr className="divider" />
-
-      <h3>Step 1 — Onboard Manufacturer</h3>
+      <p>Upload Packaging Template</p>
 
       <input
         type="file"
         onChange={(e) => setTemplateFile(e.target.files[0])}
       />
 
-      <button onClick={handleOnboard}>
-        Onboard & Register Template
-      </button>
-
-      <hr className="divider" />
-
-      <h3>Step 2 — Generate Product</h3>
-
-      <button onClick={handleGenerate}>
-        Generate QR & Register Product
+      <button onClick={handleGenerate} disabled={loading}>
+        {loading ? "Registering..." : "Generate QR & Register Product"}
       </button>
 
       <ResultCard result={result} />
