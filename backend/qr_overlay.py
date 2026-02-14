@@ -5,6 +5,7 @@ QR_SIZE_RATIO = 115 / 720
 QR_X_RATIO = 577 / 720
 QR_Y_RATIO = 170 / 405
 
+
 def replace_qr(package_image_path, new_qr_path, output_path):
     package = cv2.imread(package_image_path)
     new_qr = cv2.imread(new_qr_path)

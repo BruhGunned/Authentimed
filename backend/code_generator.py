@@ -43,7 +43,7 @@ def generate_unique_code(database_url=None, max_attempts=100):
         code = generate_code()
 
         if not code_exists(code, database_url):
-            insert_mapping(code, code, database_url)
+            insert_mapping(code, code, database_url)  # no-op; code is stored in products by app
             return code
 
     raise RuntimeError(f"Failed to generate unique code after {max_attempts} attempts")
