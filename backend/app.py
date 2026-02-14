@@ -26,8 +26,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QR_FOLDER, exist_ok=True)
 
 # Init DB when possible (for code_generator). App still runs if PostgreSQL is down.
+_db_ready = False
 try:
     init_db()
+    _db_ready = True
 except psycopg2.OperationalError:
     pass  # DB not available; /generate will return 503 until PostgreSQL is running
 
@@ -162,4 +164,18 @@ def verify():
 # ------------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    host = "127.0.0.1"
+    port = 5000
+    print()
+    print("=" * 50)
+    print("  Authentimed Backend")
+    print("=" * 50)
+    print(f"  URL:    http://{host}:{port}")
+    print(f"  DB:     {'connected' if _db_ready else 'not connected (POST /generate needs PostgreSQL)'}")
+    print("=" * 50)
+    print("  Quick check:  GET  http://127.0.0.1:5000/  -> 'Authentimed Backend Running'")
+    print("  Generate:     POST http://127.0.0.1:5000/generate  (needs DB + blockchain)")
+    print("  Verify:       POST http://127.0.0.1:5000/verify  (body: file=image)")
+    print("=" * 50)
+    print()
+    app.run(host=host, port=port, debug=True)
