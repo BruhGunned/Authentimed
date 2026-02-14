@@ -309,6 +309,7 @@ if __name__ == "__main__":
 
     try:
         code = extract_code(image_path)
+        # code = extract_code("test.jpeg")
 
         print("\n" + "=" * 60)
         print(f"EXTRACTED CODE: {code}")

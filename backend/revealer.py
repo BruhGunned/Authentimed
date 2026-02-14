@@ -86,4 +86,5 @@ if __name__ == "__main__":
         print(f"Using: {path}")
     os.makedirs(os.path.join("generated", "reveals"), exist_ok=True)
     out = reveal_channels(path, output_dir=os.path.join("generated", "reveals"), prefix=prefix)
+    # out = reveal_channels("test.jpeg", output_dir=os.path.join("generated", "reveals"), prefix=prefix)
     print("Reveal images created:", out)
