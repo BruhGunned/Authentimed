@@ -69,6 +69,21 @@ def reveal_channels(image_path, output_dir=None, prefix=""):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "hidden_pan_format.png"
-    out = reveal_channels(path)
+    import glob
+    from datetime import datetime
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+        prefix = "standalone"
+    else:
+        hidden_dir = os.path.join("generated", "hidden")
+        candidates = glob.glob(os.path.join(hidden_dir, "*.png"))
+        if not candidates:
+            path = os.path.join(hidden_dir, "hidden_pan_format.png")
+            prefix = "standalone"
+        else:
+            path = max(candidates, key=os.path.getmtime)
+            prefix = f"standalone_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        print(f"Using: {path}")
+    os.makedirs(os.path.join("generated", "reveals"), exist_ok=True)
+    out = reveal_channels(path, output_dir=os.path.join("generated", "reveals"), prefix=prefix)
     print("Reveal images created:", out)

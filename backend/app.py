@@ -1,29 +1,30 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
-import qrcode
-import hashlib
 import re
+import uuid
+import hashlib
+import qrcode
+import psycopg2
 from web3 import Web3
 
-import psycopg2
-from db import init_db
+from db import init_db, record_scan, get_scan_info
 from qr_overlay import replace_qr
 from qr_extractor import extract_qr_data
 from ai_verifier import verify_packaging
-
+from code_generator import generate_code
+from id_generation import generate_hidden_code_image
+from revealer import reveal_channels
+from extractor import extract_code_safe
 from blockchain import (
-    w3,contract,
+    w3, contract,
     vote_manufacturer,
     register_template_hash,
     register_product,
     verify_product,
     get_manufacturer,
-    is_manufacturer_approved
+    is_manufacturer_approved,
 )
-
-
-from db import init_db, record_scan, get_scan_info
 
 
 
@@ -45,18 +46,30 @@ def is_valid_product_id(product_id):
 app = Flask(__name__)
 CORS(app)
 
+# Init DB when possible. App still runs if PostgreSQL is down.
+try:
+    init_db()
+    print("DB: connected")
+except psycopg2.OperationalError as e:
+    print("DB not available:", str(e))
 
-init_db()
-
+# Folder structure inside backend/
 UPLOAD_FOLDER = "uploads"
-QR_FOLDER = "qr_codes"
 TEMPLATE_FOLDER = "templates"
 TEMP_FOLDER = "temp"
+GENERATED_DIR = "generated"
+GENERATED_QR = os.path.join(GENERATED_DIR, "qr")
+GENERATED_PACKAGED = os.path.join(GENERATED_DIR, "packaged")
+GENERATED_HIDDEN = os.path.join(GENERATED_DIR, "hidden")
+GENERATED_REVEALS = os.path.join(GENERATED_DIR, "reveals")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(QR_FOLDER, exist_ok=True)
 os.makedirs(TEMPLATE_FOLDER, exist_ok=True)
 os.makedirs(TEMP_FOLDER, exist_ok=True)
+os.makedirs(GENERATED_QR, exist_ok=True)
+os.makedirs(GENERATED_PACKAGED, exist_ok=True)
+os.makedirs(GENERATED_HIDDEN, exist_ok=True)
+os.makedirs(GENERATED_REVEALS, exist_ok=True)
 
 
 # =====================================================
@@ -121,22 +134,45 @@ def generate_product():
 
         product_id = f"MEDICINEX-{uuid.uuid4().hex[:8]}"
 
-        qr_path = f"{QR_FOLDER}/{product_id}.png"
+        qr_path = os.path.join(GENERATED_QR, f"{product_id}.png")
         img = qrcode.make(product_id)
         img.save(qr_path)
 
-        output_path = f"{QR_FOLDER}/{product_id}_packaged.png"
+        output_path = os.path.join(GENERATED_PACKAGED, f"{product_id}_packaged.png")
         replace_qr(template_path, qr_path, output_path)
+
+        # id_generation: steganographic hidden-code image (PAN format)
+        pan_code = generate_code()
+        hidden_path = os.path.join(GENERATED_HIDDEN, f"{product_id}_hidden.png")
+        generate_hidden_code_image(code=pan_code, output_path=hidden_path)
+
+        # revealer: red/blue/green channel reveal (masking) images
+        reveal_paths = reveal_channels(hidden_path, output_dir=GENERATED_REVEALS, prefix=product_id)
+
+        # extractor: read back the code from the hidden image (verification)
+        extracted_code = extract_code_safe(hidden_path)
 
         tx_result = register_product(product_id, manufacturer)
 
         if not tx_result["success"]:
             return jsonify({"error": tx_result["error"]}), 400
 
+        def rel(full_path, subdir):
+            return f"/generated/{subdir}/{os.path.basename(full_path)}"
+
         return jsonify({
             "Product ID": product_id,
             "Manufacturer ID": manufacturer,
-            "Status": "Registered"
+            "Status": "Registered",
+            "Hidden Code (PAN)": pan_code,
+            "Extracted Code (extractor)": extracted_code or "(extract failed)",
+            "images": {
+                "packaged": rel(output_path, "packaged"),
+                "hidden": rel(hidden_path, "hidden"),
+                "red_reveal": rel(reveal_paths["red"], "reveals"),
+                "blue_reveal": rel(reveal_paths["blue"], "reveals"),
+                "green_reveal": rel(reveal_paths["green"], "reveals"),
+            },
         }), 200
 
     except psycopg2.OperationalError as e:
@@ -282,9 +318,10 @@ def consumer_verify():
 # 🔷 Serve QR Images
 # =====================================================
 
-@app.route("/qr_codes/<path:filename>")
-def serve_qr(filename):
-    return send_from_directory(QR_FOLDER, filename)
+@app.route("/generated/<path:filename>")
+def serve_generated(filename):
+    """Serve generated images from backend/generated/ (qr, packaged, hidden, reveals)."""
+    return send_from_directory(GENERATED_DIR, filename)
 
 
 # =====================================================

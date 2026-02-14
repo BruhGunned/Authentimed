@@ -298,7 +298,14 @@ if __name__ == "__main__":
     print("=" * 60)
 
     import sys
-    image_path = sys.argv[1] if len(sys.argv) > 1 else "hidden_pan_format.png"
+    import glob
+    if len(sys.argv) > 1:
+        image_path = sys.argv[1]
+    else:
+        hidden_dir = os.path.join("generated", "hidden")
+        candidates = glob.glob(os.path.join(hidden_dir, "*.png"))
+        image_path = max(candidates, key=os.path.getmtime) if candidates else os.path.join(hidden_dir, "hidden_pan_format.png")
+        print(f"Using latest: {image_path}\n")
 
     try:
         code = extract_code(image_path)

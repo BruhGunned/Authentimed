@@ -103,3 +103,39 @@ body {
   border-top: 1px solid #e5e7eb;
 }
 
+.result-images {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.result-images h4 {
+  margin-bottom: 12px;
+  color: #94a3b8;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.image-grid > div {
+  background: #0f172a;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.image-grid label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.image-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+

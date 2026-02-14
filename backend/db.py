@@ -4,16 +4,25 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from datetime import datetime
 
+# Load .env from backend folder (so it works even when running from project root)
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_backend_dir, ".env"))
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/authentimed")
-
+# --- Online (Supabase) connection: uncomment below and comment the line above to use .env ---
+_raw_url = os.getenv("DATABASE_URL")
+DATABASE_URL = _raw_url.strip() if (_raw_url and _raw_url.strip()) else "postgresql://localhost:5432/authentimed"
+if "supabase.com" in DATABASE_URL and "sslmode" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL + ("&" if "?" in DATABASE_URL else "?") + "sslmode=require"
 
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
+
+
+def _conn(url=None):
+    """Connection using DATABASE_URL or optional url."""
+    return psycopg2.connect(url or DATABASE_URL)
 
 
 def init_db():
@@ -29,9 +38,39 @@ def init_db():
         )
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS code_mappings (
+            code TEXT PRIMARY KEY
+        )
+    """)
+
     conn.commit()
     cur.close()
     conn.close()
+
+
+def code_exists(code, database_url=None):
+    """Return True if PAN code already exists in code_mappings."""
+    conn = _conn(database_url)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT 1 FROM code_mappings WHERE code = %s", (code,))
+        return cur.fetchone() is not None
+    finally:
+        cur.close()
+        conn.close()
+
+
+def insert_mapping(code, _value=None, database_url=None):
+    """Insert a PAN code into code_mappings (value unused, for API compatibility)."""
+    conn = _conn(database_url)
+    cur = conn.cursor()
+    try:
+        cur.execute("INSERT INTO code_mappings (code) VALUES (%s)", (code,))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
 
 def record_scan(product_id):

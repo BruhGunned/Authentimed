@@ -3,6 +3,8 @@ Generate steganographic PAN-format hidden code image (10 chars: 4 letters + 5 di
 Uses code_generator for unique, DB-backed codes when code is not provided.
 """
 from PIL import Image
+import os
+from datetime import datetime
 
 # ---------- CONSTANTS (must match extractor.py / revealer.py) ----------
 CODE_LEN = 10
@@ -202,7 +204,9 @@ def generate_hidden_code_image(code=None, output_path=None, database_url=None):
             _draw_character(pixels, x_position, char, "green", start_y)
 
     if output_path is None:
-        output_path = "hidden_pan_format.png"
+        os.makedirs("generated/hidden", exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = os.path.join("generated", "hidden", f"hidden_pan_format_{stamp}.png")
     img.save(output_path)
     return code, output_path
 
