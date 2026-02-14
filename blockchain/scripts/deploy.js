@@ -1,22 +1,13 @@
 const hre = require("hardhat");
 
 async function main() {
+  const ProductRegistry = await hre.ethers.getContractFactory("ProductRegistry");
 
-  const [deployer, validator2, validator3] = await hre.ethers.getSigners();
+  const contract = await ProductRegistry.deploy();
 
-  const validators = [
-    deployer.address,
-    validator2.address,
-    validator3.address
-  ];
+  await contract.waitForDeployment();
 
-  const Registry = await hre.ethers.getContractFactory("ProductRegistry");
-
-  const registry = await Registry.deploy(validators);
-
-  await registry.waitForDeployment();
-
-  console.log("ProductRegistry deployed to:", await registry.getAddress());
+  console.log("Contract deployed to:", await contract.getAddress());
 }
 
 main().catch((error) => {

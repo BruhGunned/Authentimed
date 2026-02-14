@@ -3,29 +3,29 @@ from flask_cors import CORS
 import os
 import uuid
 import qrcode
-import hashlib
 import re
-from web3 import Web3
+from dotenv import load_dotenv
 
 from qr_overlay import replace_qr
 from qr_extractor import extract_qr_data
 from ai_verifier import verify_packaging
 
 from blockchain import (
-    w3,contract,
-    vote_manufacturer,
-    register_template_hash,
     register_product,
     verify_product,
-    get_manufacturer,
-    is_manufacturer_approved
+    get_product_state,
+    get_manufacturer
 )
-
 
 from db import init_db, record_scan, get_scan_info
 
 
 
+# =====================================================
+# 🔷 Load Environment
+# =====================================================
+
+load_dotenv()
 
 
 # =====================================================
@@ -43,7 +43,6 @@ def is_valid_product_id(product_id):
 
 app = Flask(__name__)
 CORS(app)
-
 
 init_db()
 
@@ -64,96 +63,65 @@ os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Authentimed Backend Running"
+    return "Authentimed Backend Running (Sepolia Mode)"
 
 
 # =====================================================
-# 🔷 MANUFACTURER ROUTES
+# 🔷 Manufacturer: Generate Product
 # =====================================================
-
-@app.route("/manufacturer/onboard", methods=["POST"])
-def onboard_manufacturer():
-    try:
-        manufacturer = request.form.get("account")
-
-        if not manufacturer:
-            return jsonify({"error": "Manufacturer account required"}), 400
-
-        vote_manufacturer(manufacturer)
-
-        if not is_manufacturer_approved(manufacturer):
-            return jsonify({"error": "Manufacturer approval failed"}), 400
-
-        if "file" not in request.files:
-            return jsonify({"error": "No template uploaded"}), 400
-
-        file = request.files["file"]
-        template_path = f"{TEMPLATE_FOLDER}/{manufacturer}.png"
-        file.save(template_path)
-
-        with open(template_path, "rb") as f:
-            hash_hex = hashlib.sha256(f.read()).hexdigest()
-
-        hash_bytes = Web3.to_bytes(hexstr=hash_hex)
-        register_template_hash(hash_bytes, manufacturer)
-
-        return jsonify({
-            "Status": "Manufacturer Approved & Template Registered"
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 
 @app.route("/manufacturer/generate", methods=["POST"])
+
+
 def generate_product():
     try:
-        manufacturer = request.form.get("account")
+        owner_address = os.getenv("OWNER_ADDRESS")
 
-        if not manufacturer:
-            return jsonify({"error": "Manufacturer account required"}), 400
-
-        template_path = f"{TEMPLATE_FOLDER}/{manufacturer}.png"
+        # Template must already exist
+        template_path = os.path.join(TEMPLATE_FOLDER, f"{owner_address}.png")
+        print("OWNER_ADDRESS:", owner_address)
+        print("Looking for template at:", template_path)
+        print("Exists:", os.path.exists(template_path))
 
         if not os.path.exists(template_path):
             return jsonify({"error": "Template not registered"}), 400
 
         product_id = f"MEDICINEX-{uuid.uuid4().hex[:8]}"
 
-        qr_path = f"{QR_FOLDER}/{product_id}.png"
+        qr_path = os.path.join(QR_FOLDER, f"{product_id}.png")
         img = qrcode.make(product_id)
         img.save(qr_path)
 
-        output_path = f"{QR_FOLDER}/{product_id}_packaged.png"
+        output_path = os.path.join(QR_FOLDER, f"{product_id}_packaged.png")
         replace_qr(template_path, qr_path, output_path)
 
-        tx_result = register_product(product_id, manufacturer)
+        tx_result = register_product(product_id)
+        print("TX Result:", tx_result)
 
         if not tx_result["success"]:
             return jsonify({"error": tx_result["error"]}), 400
 
         return jsonify({
             "Product ID": product_id,
-            "Manufacturer ID": manufacturer,
-            "Status": "Registered"
+            "Status": "Registered On-Chain",
+            "Packaged Image": f"qr_codes/{product_id}_packaged.png"
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-
 
 
 # =====================================================
-# 🔷 INTERNAL VERIFICATION LOGIC
+# 🔷 Verification Core Logic
 # =====================================================
+
 def handle_verification(role):
     try:
         if "file" not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
 
         file = request.files["file"]
-        scan_path = f"{TEMP_FOLDER}/{file.filename}"
+        scan_path = os.path.join(TEMP_FOLDER, file.filename)
         file.save(scan_path)
 
         # 🔹 Extract QR
@@ -166,20 +134,35 @@ def handle_verification(role):
                 "Reason": "Invalid or Missing QR"
             }), 200
 
-        # 🔹 Check manufacturer exists
+        # 🔹 Check manufacturer exists on-chain
         manufacturer = get_manufacturer(product_id)
 
         if manufacturer == "0x0000000000000000000000000000000000000000":
             os.remove(scan_path)
             return jsonify({
                 "Final Verdict": "COUNTERFEIT",
-                "Reason": "Not Registered on Blockchain"
+                "Reason": "Not Registered On Blockchain"
             }), 200
 
-        # 🔹 AI Packaging Check
-        template_path = f"{TEMPLATE_FOLDER}/{manufacturer}.png"
-        ai_pass = verify_packaging(scan_path, template_path)
+        # 🔹 Determine correct template path
+        # (must match how template was saved during generation)
+        template_path = os.path.join(TEMPLATE_FOLDER, f"{manufacturer}.png")
 
+        # If template saved under filename instead, adjust accordingly:
+        if not os.path.exists(template_path):
+            # fallback: assume last uploaded template
+            template_files = os.listdir(TEMPLATE_FOLDER)
+            if template_files:
+                template_path = os.path.join(TEMPLATE_FOLDER, template_files[-1])
+            else:
+                os.remove(scan_path)
+                return jsonify({
+                    "Final Verdict": "COUNTERFEIT",
+                    "Reason": "Template Not Found"
+                }), 200
+
+        # 🔹 AI Packaging Check
+        ai_pass = verify_packaging(scan_path, template_path)
         os.remove(scan_path)
 
         if not ai_pass:
@@ -188,22 +171,27 @@ def handle_verification(role):
                 "Reason": "Packaging Tampered"
             }), 200
 
-        # 🔹 Get blockchain state
-        state = contract.functions.getProductState(product_id).call()
+        # 🔹 Blockchain State
+        state = get_product_state(product_id)
 
-        # Enum mapping:
+        # Enum:
         # 0 = NONE
         # 1 = VALID
         # 2 = REPLAYED
 
         # ==============================
-        # 🔥 Pharmacist (Transactional)
+        # 🔥 Pharmacist Logic
         # ==============================
         if role == "pharmacist":
 
-            if state == 1:  # VALID → First Scan
-                pharmacist_account = w3.eth.accounts[4]
-                verify_product(product_id, pharmacist_account)
+            if state == 1:
+                tx_result = verify_product(product_id)
+
+                if not tx_result["success"]:
+                    return jsonify({
+                        "Final Verdict": "COUNTERFEIT",
+                        "Reason": tx_result["error"]
+                    }), 200
 
                 record_scan(product_id)
 
@@ -213,10 +201,10 @@ def handle_verification(role):
                     "Product ID": product_id
                 }), 200
 
-            if state == 2:  # Already REPLAYED
+            if state == 2:
                 return jsonify({
                     "Final Verdict": "COUNTERFEIT",
-                    "Reason": "Replay Detected",
+                    "Reason": "Replay Detected (Already Scanned)",
                     "Product ID": product_id
                 }), 200
 
@@ -225,7 +213,7 @@ def handle_verification(role):
             }), 200
 
         # ==============================
-        # 🔥 Consumer (Read-Only)
+        # 🔥 Consumer Logic
         # ==============================
         if role == "consumer":
 
@@ -253,9 +241,8 @@ def handle_verification(role):
         return jsonify({"error": str(e)}), 500
 
 
-
 # =====================================================
-# 🔷 PHARMACIST ROUTE
+# 🔷 Routes
 # =====================================================
 
 @app.route("/pharmacist/verify", methods=["POST"])
@@ -263,18 +250,10 @@ def pharmacist_verify():
     return handle_verification("pharmacist")
 
 
-# =====================================================
-# 🔷 CONSUMER ROUTE
-# =====================================================
-
 @app.route("/consumer/verify", methods=["POST"])
 def consumer_verify():
     return handle_verification("consumer")
 
-
-# =====================================================
-# 🔷 Serve QR Images
-# =====================================================
 
 @app.route("/qr_codes/<path:filename>")
 def serve_qr(filename):
@@ -287,13 +266,3 @@ def serve_qr(filename):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    return jsonify({
-        "error": "Internal server error",
-        "details": str(e)
-    }), 500
-
