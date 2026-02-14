@@ -1,8 +1,52 @@
 [
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_validators",
+          "type": "address[]"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "approvedManufacturers",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "id",
+          "type": "string"
+        }
+      ],
+      "name": "getManufacturer",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -24,13 +68,38 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "manufacturer",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "manuf",
+          "type": "address"
+        }
+      ],
+      "name": "getTemplateHash",
       "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
         {
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "name": "packagingHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
         }
       ],
       "stateMutability": "view",
@@ -44,7 +113,7 @@
           "type": "string"
         }
       ],
-      "name": "markDuplicate",
+      "name": "registerProduct",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -52,14 +121,46 @@
     {
       "inputs": [
         {
-          "internalType": "string",
-          "name": "id",
-          "type": "string"
+          "internalType": "bytes32",
+          "name": "hash",
+          "type": "bytes32"
         }
       ],
-      "name": "registerProduct",
+      "name": "registerTemplateHash",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "validatorCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "validators",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -79,6 +180,38 @@
         }
       ],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "candidate",
+          "type": "address"
+        }
+      ],
+      "name": "voteManufacturer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "votes",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ]

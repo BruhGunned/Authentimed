@@ -96,3 +96,10 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.divider {
+  margin: 25px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+

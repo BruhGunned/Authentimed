@@ -1,37 +1,75 @@
 import { useState } from "react";
+import ResultCard from "./ResultCard";
 
 export default function ManufacturerPanel() {
-  const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState(null);
+  const [account, setAccount] = useState("");
+  const [templateFile, setTemplateFile] = useState(null);
+  const [result, setResult] = useState(null);
 
-  const generateQR = async () => {
-  setLoading(true);
-  setResponse(null);
+  const handleOnboard = async () => {
+    if (!account || !templateFile) return;
 
-  const res = await fetch("http://127.0.0.1:5000/generate", {
-    method: "POST"
-  });
+    const formData = new FormData();
+    formData.append("account", account);
+    formData.append("file", templateFile);
 
-  const data = await res.json();
-  setResponse(data);
-  setLoading(false);
-};
+    const res = await fetch("http://127.0.0.1:5000/manufacturer/onboard", {
+      method: "POST",
+      body: formData,
+    });
 
+    const data = await res.json();
+    setResult(data);
+  };
+
+  const handleGenerate = async () => {
+    if (!account) return;
+
+    const formData = new FormData();
+    formData.append("account", account);
+
+    const res = await fetch("http://127.0.0.1:5000/manufacturer/generate", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setResult(data);
+  };
 
   return (
     <div className="card">
-      <h2>Generate Serialized QR</h2>
+      <h2>Manufacturer Dashboard</h2>
 
-      <button onClick={generateQR} disabled={loading}>
-        {loading ? "Generating..." : "Generate & Register"}
+      <input
+        type="text"
+        placeholder="Manufacturer Account"
+        value={account}
+        onChange={(e) => setAccount(e.target.value)}
+      />
+
+      <hr className="divider" />
+
+      <h3>Step 1 — Onboard Manufacturer</h3>
+
+      <input
+        type="file"
+        onChange={(e) => setTemplateFile(e.target.files[0])}
+      />
+
+      <button onClick={handleOnboard}>
+        Onboard & Register Template
       </button>
 
-      {response && (
-        <div className="result-success">
-          <p><strong>ID:</strong> {response.id}</p>
-          <p>Registered on Blockchain</p>
-        </div>
-      )}
+      <hr className="divider" />
+
+      <h3>Step 2 — Generate Product</h3>
+
+      <button onClick={handleGenerate}>
+        Generate QR & Register Product
+      </button>
+
+      <ResultCard result={result} />
     </div>
   );
 }

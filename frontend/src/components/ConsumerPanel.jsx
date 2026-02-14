@@ -14,7 +14,7 @@ export default function ConsumerPanel() {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("http://127.0.0.1:5000/verify", {
+  const res = await fetch("http://127.0.0.1:5000/consumer/verify", {
     method: "POST",
     body: formData
   });
