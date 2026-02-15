@@ -18,7 +18,7 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 w3 = Web3(Web3.HTTPProvider(SEPOLIA_RPC_URL))
 
 # Your deployed contract address (Sepolia)
-contract_address = Web3.to_checksum_address("0x157dc4384599189d93D5de7C9FC79f1DC75DA0f1")
+contract_address = Web3.to_checksum_address("0xc9d80E54970558025ACE45c0751E039A533777c6")
 
 with open("abi.json") as f:
     abi = json.load(f)
