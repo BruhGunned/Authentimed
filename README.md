@@ -117,7 +117,7 @@ POST /consumer/verify
 * Solidity smart contract
 * Hardhat
 * Sepolia testnet
-* Web3.py
+* Web3
 * Ethers-compatible
 
 ---
