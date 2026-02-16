@@ -1,182 +1,231 @@
-# Authentimed
+# AuthentiMED
 
-AI + Blockchain Based Counterfeit Drug Detection System
+### AI + Blockchain Pharmaceutical Authentication System
 
-## 🚀 Features
+AuthentiMED is a full-stack Web3 pharmaceutical authentication system that combines:
 
-- QR Code Serialization
-- AI Packaging Verification (OpenCV)
-- Blockchain Registration (Ethereum Smart Contract)
-- Replay Protection
-- Full Stack Integration (Flask + React)
+* AI-powered packaging verification
+* Blockchain-backed product registration
+* QR + hidden strip dual-factor linking
+* Role-based verification flows (Manufacturer / Pharmacist / Consumer)
 
-## 🛠 Tech Stack
+It prevents counterfeit medicine circulation using immutable on-chain logs and image-based validation.
 
-- Flask
-- React (Vite)
-- Web3.py
-- Solidity
-- OpenCV
+---
 
-## 📦 How It Works
+## 🚀 Architecture Overview
 
-1. Manufacturer generates serialized QR
-2. QR embedded into packaging
-3. Product registered on blockchain
-4. Consumer uploads packaging
-5. AI verifies authenticity
-6. QR extracted
-7. Blockchain validates product
-8. Final verdict returned
+```
+Manufacturer → Registers batch on-chain
+           ↓
+Blockchain (Sepolia / Hardhat)
+           ↓
+Pharmacist → First verification + activation
+           ↓
+Consumer → Final authenticity check
+```
 
-🚀 Deployment & Local Setup Guide
-🧱 Project Structure
+Core Layers:
+
+* **Frontend** – React (Vite)
+* **Backend** – Flask (REST API)
+* **Blockchain** – Solidity + Hardhat (Sepolia)
+* **Database** – PostgreSQL (Supabase)
+* **AI Layer** – Packaging + hidden strip verification
+
+---
+
+# 🧠 Role Workflows
+
+## 1️⃣ Manufacturer
+
+* Upload packaging template
+* System:
+
+  * Generates QR
+  * Embeds hidden strip code
+  * Registers Product ID on-chain
+* Returns:
+
+  * Product ID
+  * Blockchain status
+  * Generated packaging image
+
+Endpoint:
+
+```
+POST /manufacturer/generate
+```
+
+---
+
+## 2️⃣ Pharmacist
+
+* Upload image (full pack / QR / strip)
+* System:
+
+  * Extracts QR
+  * Checks on-chain record
+  * Verifies packaging integrity
+  * Activates product (first scan recorded)
+
+Endpoint:
+
+```
+POST /pharmacist/verify
+```
+
+---
+
+## 3️⃣ Consumer
+
+* Upload image
+* System:
+
+  * Validates QR / strip
+  * Checks first scan status
+  * Flags replay attempts
+  * Displays scan history
+
+Endpoint:
+
+```
+POST /consumer/verify
+```
+
+---
+
+# 🛠 Tech Stack
+
+## Frontend
+
+* React (Vite)
+* React Router
+* HTML-CSS-JAVASCRIPT
+
+## Backend
+
+* Flask
+* REST APIs
+* QR extraction
+* Image processing
+* AI verification module
+* PostgreSQL (Supabase)
+
+## Blockchain
+
+* Solidity smart contract
+* Hardhat
+* Sepolia testnet
+* Web3.py
+* Ethers-compatible
+
+---
+
+# 📂 Project Structure
+
+```
 authentimed/
 │
-├── backend/                 # Flask + Web3 + OpenCV
-├── frontend/                # React (Vite)
-├── blockchain/              # Hardhat smart contract
+├── backend/                # Flask backend
+│   ├── app.py
+│   ├── ai_verifier.py
+│   ├── qr_extractor.py
+│   └── ...
+│
+├── blockchain/             # Hardhat project
+│   ├── contracts/
+│   ├── scripts/
+│   └── hardhat.config.js
+│
+├── frontend/               # Stable UI
+├── frontend2/              # UI redesign branch work
+│
+├── requirements.txt
 └── README.md
+```
 
-🔥 Prerequisites
+---
 
-Make sure you have installed:
+# 🔧 Setup Instructions
 
-Node.js (LTS)
+## 1️⃣ Backend
 
-Python 3.10+
-
-Git
-
-npm
-
-Hardhat (via npm)
-
-🛠 1️⃣ Smart Contract Setup (Hardhat)
-Step 1 — Navigate to Blockchain Folder
-cd blockchain
-
-Step 2 — Install Dependencies
-npm install
-
-Step 3 — Start Hardhat Local Node
-npx hardhat node
-
-
-You should see:
-
-Started HTTP JSON-RPC server at http://127.0.0.1:8545
-
-
-Keep this terminal running.
-
-Step 4 — Deploy Smart Contract
-
-Open a new terminal:
-
-cd blockchain
-npx hardhat run scripts/deploy.js --network localhost
-
-
-You will see:
-
-Contract deployed to: 0xABC123...
-
-
-Copy this contract address.
-
-🔗 2️⃣ Connect Backend to Smart Contract
-
-Open:
-
-backend/blockchain.py
-
-
-Update:
-
-contract_address = "PASTE_DEPLOYED_ADDRESS_HERE"
-
-
-Make sure Web3 provider is:
-
-Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
-
-🧠 Important
-
-Every time you restart the Hardhat node:
-
-Blockchain state resets
-
-Contract must be redeployed
-
-Contract address must be updated in backend
-
-🖥 3️⃣ Backend Setup (Flask + Web3 + OpenCV)
-Step 1 — Navigate to Backend
+```bash
 cd backend
-
-Step 2 — Create & Activate Virtual Environment (First Time Only)
 python -m venv .venv
-source .venv/bin/activate
-
-Step 3 — Install Dependencies
-pip install -r requirements.txt
-
-
-If requirements.txt is not present:
-
-pip install flask flask-cors web3 qrcode opencv-python
-
-Step 4 — Run Backend
+source .venv/bin/activate   # Mac/Linux
+pip install -r ../requirements.txt
 python app.py
+```
 
+Runs at:
 
-You should see:
+```
+http://127.0.0.1:5000
+```
 
-Running on http://127.0.0.1:5000
+---
 
+## 2️⃣ Frontend
 
-Backend is now live.
-
-🌐 4️⃣ Frontend Setup (React + Vite)
-Step 1 — Navigate to Frontend
-cd frontend/authentimed-frontend
-
-Step 2 — Install Node Modules
-npm install
-
-Step 3 — Start Dev Server
-npm run dev
-
-
-You should see:
-
-http://localhost:5173
-
-
-Open that in your browser.
-
-🧪 5️⃣ Full System Startup Order
-
-Always start services in this order:
-
-Terminal 1 — Hardhat Node
-cd blockchain
-npx hardhat node
-
-Terminal 2 — Deploy Contract
-cd blockchain
-npx hardhat run scripts/deploy.js --network localhost
-
-
-Update contract address in backend.
-
-Terminal 3 — Backend
-cd backend
-source .venv/bin/activate
-python app.py
-
-Terminal 4 — Frontend
+```bash
 cd frontend
+npm install
 npm run dev
+```
+
+Runs at:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 3️⃣ Blockchain
+
+```bash
+cd blockchain
+npm install
+npx hardhat compile
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+---
+
+# 🔐 Security Features
+
+* Immutable product registration
+* QR + strip dual-factor linking
+* Replay attack detection
+* First-scan timestamp recording
+* AI packaging tamper detection
+* Role-based verification flow
+* On-chain identity validation
+
+---
+
+# ⚠ Known Limitations
+
+* Sepolia gas latency
+* No Layer-2 scaling yet
+* Single-node Flask deployment
+* No production-grade CDN/storage
+
+---
+
+# 🌱 Future Improvements
+
+* Layer-2 deployment (Polygon / Arbitrum)
+* IPFS storage for packaging
+* Zero-knowledge verification
+* Wallet-based manufacturer authentication
+* Multi-scan anomaly analytics
+* Production Docker deployment
+
+---
+
+
+
 
